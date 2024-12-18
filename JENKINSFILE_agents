@@ -41,8 +41,8 @@ pipeline {
                         echo Running Unit Tests
                         set PYTHONPATH=%WORKSPACE%
                         pytest --junitxml=result-unit.xml test\\unit
-                        stash includes: 'result-unit.xml', name: 'testResults'
                         '''
+                        stash includes: 'result-unit.xml', name: 'testResults'
                     }
                 }
                 stage ('Service'){
@@ -62,8 +62,8 @@ pipeline {
                         echo Running Service Tests
                         set PYTHONPATH=%WORKSPACE%
                         pytest --junitxml=result-rest.xml test\\rest
-                        stash includes: 'result-unit.xml', name: 'testResults'
                         '''
+                        stash includes: 'result-unit.xml', name: 'testResults'
                     }
                 }
             }
