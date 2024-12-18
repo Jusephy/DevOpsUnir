@@ -1,0 +1,53 @@
+pipeline {
+    agent any
+
+    stages() {
+        stage('GetCode') {
+            environment {
+                PYTHONPATH = "${WORKSPACE}/reto3"
+            }
+            steps {
+                git 'https://github.com/Jusephy/DevOpsUnir'
+                echo 'Check if code was downloaded successfully'   
+                bat "dir"
+                bat "whoami"
+                bat "hostname"
+                bat "echo Check current Workspace $WORKSPACE"
+                bat "set PYTHONPATH=%WORKSPACE%"
+            }
+        }
+        stage('Build') {
+            steps { 
+                echo ''
+            }
+        }
+        stage ('Tests'){
+            parallel{
+                stage('Unit'){
+                    steps {
+                        bat'''
+                        pytest --junitxml=result-unit.xml test\\unit
+                        '''
+                        bat "whoami"
+                        bat "hostname"
+                        bat "echo Check current Workspace $WORKSPACE"
+                    }
+                }
+                stage ('Service'){
+                    steps {
+                        bat '''
+                        set FLASK_APP=app\\api.py
+                        start flask run
+                        set PYTHONPATH=$WORKSPACE
+                        start java -jar C:\\Users\\jhona\\Desktop\\Unir_DevOps\\wiremock\\wiremock-standalone-3.10.0.jar --port 9090 --root-dir %WORKSPACE%\\test\\wiremock
+                        pytest --junitxml=result-rest.xml test\\rest
+                        '''
+                        bat "whoami"
+                        bat "hostname"
+                        bat "echo Check current Workspace $WORKSPACE"
+                    }
+                }
+            }
+        }
+    }
+}
