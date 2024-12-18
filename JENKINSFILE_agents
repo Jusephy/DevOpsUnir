@@ -1,11 +1,15 @@
 pipeline {
     agent any
+    
+     environment {
+        PYTHONPATH = "${env.WORKSPACE}"
+        FLASK_APP = "app\\api.py"
+        WIREMOCK_JAR = "C:\\Users\\jhona\\Desktop\\Unir_DevOps\\wiremock\\wiremock-standalone-3.10.0.jar"
+        WIREMOCK_DIR = "C:\\Users\\jhona\\Desktop\\Unir_DevOps\\Ejercicios\\test1\\helloworld\\test\\wiremock"
+    }
 
     stages() {
         stage('GetCode') {
-            environment {
-                PYTHONPATH = "${WORKSPACE}/reto3"
-            }
             steps {
                 git 'https://github.com/Jusephy/DevOpsUnir'
                 echo 'Check if code was downloaded successfully'   
@@ -13,41 +17,67 @@ pipeline {
                 bat "whoami"
                 bat "hostname"
                 bat "echo Check current Workspace $WORKSPACE"
-                bat "set PYTHONPATH=%WORKSPACE%"
+                stash includes: '**/*', name: 'sourceCode'
             }
         }
         stage('Build') {
-            steps { 
-                echo ''
+            steps {
+                unstash 'sourceCode'
+                bat "whoami"
+                bat "hostname"
+                echo 'Starting Build Stage'
+                bat "echo Build complete"
             }
         }
         stage ('Tests'){
             parallel{
                 stage('Unit'){
+                    agent { label 'agent-one' } 
                     steps {
-                        bat'''
-                        pytest --junitxml=result-unit.xml test\\unit
-                        '''
+                        unstash 'sourceCode'
                         bat "whoami"
                         bat "hostname"
-                        bat "echo Check current Workspace $WORKSPACE"
+                        bat'''
+                        echo Running Unit Tests
+                        set PYTHONPATH=%WORKSPACE%
+                        pytest --junitxml=result-unit.xml test\\unit
+                        '''
                     }
                 }
                 stage ('Service'){
+                    agent { label 'agent-two' } 
                     steps {
-                        bat '''
-                        set FLASK_APP=app\\api.py
-                        start flask run
-                        set PYTHONPATH=$WORKSPACE
-                        start java -jar C:\\Users\\jhona\\Desktop\\Unir_DevOps\\wiremock\\wiremock-standalone-3.10.0.jar --port 9090 --root-dir %WORKSPACE%\\test\\wiremock
-                        pytest --junitxml=result-rest.xml test\\rest
-                        '''
+                        unstash 'sourceCode'
                         bat "whoami"
                         bat "hostname"
-                        bat "echo Check current Workspace $WORKSPACE"
+                        bat '''
+                        echo Starting Flask Service
+                        set FLASK_APP=app\\api.py
+                        start flask run
+                        
+                        echo Starting Wiremock
+                        start java -jar %WIREMOCK_JAR% --port 9090 --root-dir %WIREMOCK_DIR%
+                        
+                        echo Running Service Tests
+                        set PYTHONPATH=%WORKSPACE%
+                        pytest --junitxml=result-rest.xml test\\rest
+                        '''
                     }
                 }
             }
+        }
+        stage ('Results'){
+            steps {
+                echo 'Uploading Test Results'
+                junit 'result*.xml'
+            }
+            
+        }
+    }
+     post {
+        always {
+            echo 'Clean workspace'
+            deleteDir()
         }
     }
 }
