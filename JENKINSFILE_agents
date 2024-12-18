@@ -43,11 +43,6 @@ pipeline {
                         pytest --junitxml=result-unit.xml test\\unit
                         '''
                     }
-                    post {
-                        always {
-                            deleteDir()
-                        }
-                    }
                 }
                 stage ('Service'){
                     agent { label 'agent-two' } 
