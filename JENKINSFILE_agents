@@ -43,6 +43,11 @@ pipeline {
                         pytest --junitxml=result-unit.xml test\\unit
                         '''
                     }
+                    post {
+                        always {
+                            deleteDir()
+                        }
+                    }
                 }
                 stage ('Service'){
                     agent { label 'agent-two' } 
@@ -63,6 +68,11 @@ pipeline {
                         pytest --junitxml=result-rest.xml test\\rest
                         '''
                     }
+                    post {
+                        always {
+                            deleteDir()
+                        }
+                    }
                 }
             }
         }
@@ -71,14 +81,6 @@ pipeline {
                 echo 'Uploading Test Results'
                 junit 'result*.xml'
             }
-            
-        }
-    }
-     post {
-        always {
-            echo 'Clean workspace'
-            timeout /t 10
-            deleteDir()
         }
     }
 }
